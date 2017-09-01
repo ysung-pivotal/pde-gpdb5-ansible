@@ -1,0 +1,91 @@
+---
+- hosts: localhost
+  connection: local
+  become: False
+  gather_facts: False
+
+  vars_files:
+  - vars/all.yml
+
+  tasks:
+  - name: create ec2 instances 
+    ec2:
+      key_name: "{{key_name}}"
+      instance_type: "{{instance_type}}"
+      region: "{{aws_region}}"
+      image: "{{ami_id}}"
+      count: 1
+      vpc_subnet_id: "{{subnet_id}}"
+      group_id: "{{group_id}}"
+      assign_public_ip: yes 
+      volumes:
+        - device_name: /dev/sda1
+          volume_type: gp2
+          volume_size: 50
+          delete_on_termination: yes
+        - device_name: /dev/xvdb
+          volume_type: gp2
+          volume_size: 200
+          delete_on_termination: yes
+        - device_name: /dev/xvdc
+          volume_type: st1
+          volume_size: 800
+          delete_on_termination: yes
+        - device_name: /dev/xvdd
+          volume_type: st1
+          volume_size: 800
+          delete_on_termination: yes
+        - device_name: /dev/xvde
+          volume_type: st1
+          volume_size: 800
+          delete_on_termination: yes
+        - device_name: /dev/xvdf
+          volume_type: st1
+          volume_size: 800
+          delete_on_termination: yes
+      wait: true
+      instance_tags:
+        name: gpdb5svn 
+    register: gpdb5
+
+  - name: add ec2 hosts to inventory
+    add_host: 
+      name: "{{item.public_ip}}"
+      groups: gpdb
+    with_items: "{{gpdb5.instances}}"     
+
+  - name: wait for sshd
+    wait_for:
+      host: "{{item.public_dns_name}}"
+      port: 22
+      delay: 60
+      timeout: 600
+      state: started
+    with_items: "{{gpdb5.instances}}"
+
+- hosts: gpdb
+  user: centos
+  sudo: true
+  gather_facts: true
+
+  tasks:
+  - name: install epel-release
+    yum: name=epel-release state=present
+
+  - name: disable selinux
+    selinux:
+      state: disabled
+#- hosts: localhost
+#  connection: local
+#  become: False
+#  gather_facts: False
+#
+#  vars_files:
+#  - vars/all.yml
+#
+#  tasks:
+#  - name: remove ec2 instances
+#    ec2:
+#      state: 'absent'
+#      region: "{{aws_region}}"
+#      instance_ids: "{{gpdb5.instance_ids}}"

@@ -1,0 +1,6 @@
+key_name: pointcloud
+aws_region: us-west-2
+ami_id: ami-f4533694
+group_id: sg-d93960a3
+subnet_id: subnet-2e49ef58
+instance_type: m4.xlarge
