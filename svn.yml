@@ -73,8 +73,17 @@
     yum: name=epel-release state=present
 
   - name: disable selinux
-    selinux:
-      state: disabled
+    selinux: state=disabled
+
+  - name: create gpt partition table
+    command: /sbin/parted -s /dev/{{ item }} mklabel gpt
+    with_items: 
+      - xvdb
+      - xvdc
+      - xvdd
+      - xvde
+      - xvdf
+  
 #- hosts: localhost
 #  connection: local
 #  become: False
